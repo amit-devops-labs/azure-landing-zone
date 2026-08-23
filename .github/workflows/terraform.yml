@@ -6,9 +6,6 @@ on:
       - main
       - feature/copy1
 
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: read
