@@ -184,32 +184,55 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # Init
+      # Terraform Init
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init
+        shell: powershell
+        run: |
+          terraform init
 
-      # Format
+      # Terraform Format
       - name: Terraform Format Check
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform fmt -check -recursive
+        shell: powershell
+        run: |
+          terraform fmt -check -recursive
 
-      # Validate
+      # Terraform Validate
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform validate
+        shell: powershell
+        run: |
+          terraform validate
 
-      # Plan
+      # Terraform Plan
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform plan -out=tfplan
+        shell: powershell
+        run: |
+          terraform plan -out=tfplan
 
-      # Upload Plan
+          Write-Host "===================================="
+          Write-Host "Checking Terraform Plan File"
+          Write-Host "===================================="
+
+          Get-ChildItem -Path . -Force
+
+          if (!(Test-Path ".\tfplan")) {
+              Write-Error "Terraform plan file was not created!"
+              exit 1
+          }
+
+          Write-Host "Terraform plan file created successfully."
+          Get-Item ".\tfplan"
+
+      # Upload Terraform Plan
       - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan
           path: ${{ env.TF_WORKING_DIR }}/tfplan
+          if-no-files-found: error
 
 
   # ==================================================
@@ -220,10 +243,12 @@ jobs:
     name: Production Terraform Apply
     needs: terraform-plan
 
+    # Production Environment
+    # Required reviewer approval configured in GitHub
     environment:
       name: Production
 
-    # Only Apply from main branch
+    # Apply only when code is pushed to main
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     runs-on: self-hosted
@@ -250,19 +275,42 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # Init
+      # Terraform Init
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init
+        shell: powershell
+        run: |
+          terraform init
 
-      # Download Plan
+      # Download Terraform Plan
       - name: Download Terraform Plan
         uses: actions/download-artifact@v4
         with:
           name: terraform-plan
           path: ${{ env.TF_WORKING_DIR }}
 
-      # Apply
+      # Verify Terraform Plan
+      - name: Verify Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        shell: powershell
+        run: |
+          Write-Host "===================================="
+          Write-Host "Checking Downloaded Terraform Plan"
+          Write-Host "===================================="
+
+          Get-ChildItem -Path . -Force
+
+          if (!(Test-Path ".\tfplan")) {
+              Write-Error "Terraform plan file was not downloaded!"
+              exit 1
+          }
+
+          Write-Host "Terraform plan downloaded successfully."
+          Get-Item ".\tfplan"
+
+      # Terraform Apply
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply -auto-approve tfplan
+        shell: powershell
+        run: |
+          terraform apply -auto-approve tfplan
