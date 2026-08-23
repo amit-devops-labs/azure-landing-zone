@@ -1,6 +1,6 @@
 my_rgs = {
   rg1 = {
-    name     = "rg_amit1"
+    name     = "rg_amit"
     location = "Central India"
   }
 
