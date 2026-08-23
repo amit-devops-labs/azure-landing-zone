@@ -187,6 +187,76 @@ jobs:
 
 
       # ------------------------------------------------
+      # Azure Authentication Test
+      # ------------------------------------------------
+      - name: Test Azure Authentication
+        shell: powershell
+        run: |
+          Write-Host "=========================================="
+          Write-Host "Testing Azure Authentication"
+          Write-Host "=========================================="
+
+          az account show --only-show-errors
+
+          az account get-access-token `
+            --resource https://management.azure.com/ `
+            --only-show-errors | Out-Null
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Azure Management API authentication failed."
+              exit $LASTEXITCODE
+          }
+
+          Write-Host "Azure Management API authentication successful."
+
+
+      # ------------------------------------------------
+      # Test Storage Account Access
+      # ------------------------------------------------
+      - name: Test Storage Account Access
+        shell: powershell
+        run: |
+          Write-Host "=========================================="
+          Write-Host "Testing Storage Account Access"
+          Write-Host "=========================================="
+
+          az storage account show `
+            --name storagefortfstate `
+            --resource-group rg-tfstate123456 `
+            --only-show-errors
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Unable to access the Terraform state Storage Account."
+              exit $LASTEXITCODE
+          }
+
+          Write-Host "Storage Account access successful."
+
+
+      # ------------------------------------------------
+      # Test Azure Management API Connectivity
+      # ------------------------------------------------
+      - name: Test Azure Management API Connectivity
+        shell: powershell
+        run: |
+          Write-Host "=========================================="
+          Write-Host "Testing Azure Management API Connectivity"
+          Write-Host "=========================================="
+
+          $result = Test-NetConnection `
+            -ComputerName management.azure.com `
+            -Port 443 `
+            -WarningAction SilentlyContinue
+
+          if (-not $result.TcpTestSucceeded) {
+              Write-Error "Unable to connect to management.azure.com:443"
+              exit 1
+          }
+
+          Write-Host "Azure Management API network connectivity successful."
+
+
+      # ------------------------------------------------
       # Terraform
       # ------------------------------------------------
       - name: Setup Terraform
@@ -329,6 +399,30 @@ jobs:
               "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
               "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
             }
+
+
+      # ------------------------------------------------
+      # Azure Authentication Test
+      # ------------------------------------------------
+      - name: Test Azure Authentication
+        shell: powershell
+        run: |
+          Write-Host "=========================================="
+          Write-Host "Testing Azure Authentication"
+          Write-Host "=========================================="
+
+          az account show --only-show-errors
+
+          az account get-access-token `
+            --resource https://management.azure.com/ `
+            --only-show-errors | Out-Null
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Azure Management API authentication failed."
+              exit $LASTEXITCODE
+          }
+
+          Write-Host "Azure Management API authentication successful."
 
 
       # ------------------------------------------------
