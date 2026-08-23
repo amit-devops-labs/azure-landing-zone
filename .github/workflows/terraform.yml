@@ -205,12 +205,24 @@ jobs:
         run: |
           terraform validate
 
-      # Terraform Plan
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         shell: powershell
         run: |
-          terraform plan -out=tfplan
+          $planPath = Join-Path (Get-Location) "tfplan"
+
+          Write-Host "===================================="
+          Write-Host "Terraform Plan"
+          Write-Host "===================================="
+          Write-Host "Working Directory: $(Get-Location)"
+          Write-Host "Plan File: $planPath"
+
+          terraform.exe plan "-out=$planPath"
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Terraform plan failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+          }
 
           Write-Host "===================================="
           Write-Host "Checking Terraform Plan File"
@@ -218,13 +230,13 @@ jobs:
 
           Get-ChildItem -Path . -Force
 
-          if (!(Test-Path ".\tfplan")) {
-              Write-Error "Terraform plan file was not created!"
+          if (!(Test-Path $planPath)) {
+              Write-Error "Terraform plan file was not created at: $planPath"
               exit 1
           }
 
           Write-Host "Terraform plan file created successfully."
-          Get-Item ".\tfplan"
+          Get-Item $planPath
 
       # Upload Terraform Plan
       - name: Upload Terraform Plan
